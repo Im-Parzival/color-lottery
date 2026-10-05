@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抽籤</title>
+<style>
+  body { font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #faf7f2; color: #333; padding: 16px; box-sizing: border-box; }
+  h1 { margin: 0 0 8px; font-size: 1.6rem; }
+  p.hint { margin: 0 0 20px; color: #777; }
+  .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; width: min(360px, 100%); }
+  .option { position: relative; border-radius: 16px; padding: 22px 0; text-align: center; font-size: 1.4rem; font-weight: bold; color: #fff; cursor: pointer; user-select: none; border: 4px solid transparent; transition: transform .1s, box-shadow .2s, opacity .2s; opacity: .45; }
+  .option input { position: absolute; opacity: 0; pointer-events: none; }
+  .option.checked { opacity: 1; box-shadow: 0 6px 16px rgba(0,0,0,.2); }
+  .option.highlight { border-color: #222; transform: scale(1.06); }
+  .red { background: #d9534f; }
+  .blue { background: #3c78d8; }
+  .yellow { background: #f0ad4e; color: #333; }
+  .green { background: #5cb85c; }
+  .controls { margin-top: 24px; display: flex; gap: 12px; }
+  button { font-size: 1.1rem; padding: 12px 28px; border-radius: 12px; border: none; cursor: pointer; }
+  #drawBtn { background: #333; color: #fff; }
+  #drawBtn:disabled { background: #bbb; cursor: not-allowed; }
+  #resetBtn { background: #e5e5e5; color: #333; }
+  #status { margin-top: 18px; min-height: 2em; font-size: 1.1rem; }
+  #result { margin-top: 10px; font-size: 2.4rem; font-weight: bold; min-height: 1.2em; }
+</style>
+</head>
+<body>
+  <h1>抽籤</h1>
+  <p class="hint">勾選其中三個顏色，按下抽籤</p>
+
+  <div class="options">
+    <label class="option red" data-color="紅"><input type="checkbox" value="紅">紅</label>
+    <label class="option blue" data-color="藍"><input type="checkbox" value="藍">藍</label>
+    <label class="option yellow" data-color="黃"><input type="checkbox" value="黃">黃</label>
+    <label class="option green" data-color="綠"><input type="checkbox" value="綠">綠</label>
+  </div>
+
+  <div class="controls">
+    <button id="drawBtn" disabled>抽籤</button>
+    <button id="resetBtn">重設</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="result"></div>
+
+<script>
+  const options = Array.from(document.querySelectorAll('.option'));
+  const drawBtn = document.getElementById('drawBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
+  let drawing = false;
+
+  function checkedOptions() {
+    return options.filter(o => o.querySelector('input').checked);
+  }
+
+  function refresh() {
+    const picked = checkedOptions();
+    options.forEach(o => o.classList.toggle('checked', o.querySelector('input').checked));
+    const ok = picked.length === 3;
+    drawBtn.disabled = !ok || drawing;
+    if (drawing) return;
+    if (picked.length < 3) statusEl.textContent = `已勾選 ${picked.length} 個，需要勾選 3 個`;
+    else if (picked.length > 3) statusEl.textContent = `已勾選 ${picked.length} 個，請只勾 3 個`;
+    else statusEl.textContent = '按下抽籤';
+  }
+
+  options.forEach(o => o.querySelector('input').addEventListener('change', () => {
+    if (checkedOptions().length > 3) o.querySelector('input').checked = false;
+    resultEl.textContent = '';
+    refresh();
+  }));
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function draw() {
+    const picked = checkedOptions();
+    if (picked.length !== 3 || drawing) return;
+    drawing = true;
+    drawBtn.disabled = true;
+    resultEl.textContent = '';
+    picked.forEach(o => o.classList.remove('highlight'));
+
+    const winnerIndex = crypto.getRandomValues(new Uint32Array(1))[0] % 3;
+    const steps = 18;
+    for (let i = 0; i < steps; i++) {
+      picked.forEach(o => o.classList.remove('highlight'));
+      picked[i % 3].classList.add('highlight');
+      statusEl.textContent = '抽籤中…';
+      await sleep(60 + i * 12);
+    }
+    picked.forEach(o => o.classList.remove('highlight'));
+    const winner = picked[winnerIndex];
+    winner.classList.add('highlight');
+    resultEl.textContent = winner.dataset.color;
+    statusEl.textContent = '抽中了！';
+    drawing = false;
+    drawBtn.disabled = false;
+  }
+
+  drawBtn.addEventListener('click', draw);
+  resetBtn.addEventListener('click', () => {
+    options.forEach(o => { o.querySelector('input').checked = false; o.classList.remove('highlight'); });
+    resultEl.textContent = '';
+    refresh();
+  });
+
+  refresh();
+</script>
+</body>
+</html>
