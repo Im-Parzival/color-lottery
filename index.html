@@ -72,9 +72,7 @@
     refresh();
   }));
 
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-  async function draw() {
+  function draw() {
     const picked = checkedOptions();
     if (picked.length < 2 || drawing) return;
     drawing = true;
@@ -83,20 +81,12 @@
     picked.forEach(o => o.classList.remove('highlight'));
 
     const winnerIndex = crypto.getRandomValues(new Uint32Array(1))[0] % picked.length;
-    const steps = 18;
-    for (let i = 0; i < steps; i++) {
-      picked.forEach(o => o.classList.remove('highlight'));
-      picked[i % picked.length].classList.add('highlight');
-      statusEl.textContent = '抽籤中…';
-      await sleep(60 + i * 12);
-    }
-    picked.forEach(o => o.classList.remove('highlight'));
     const winner = picked[winnerIndex];
     winner.classList.add('highlight');
     resultEl.textContent = winner.dataset.color;
     statusEl.textContent = '抽中了！';
     drawing = false;
-    drawBtn.disabled = false;
+    refresh();
   }
 
   drawBtn.addEventListener('click', draw);
