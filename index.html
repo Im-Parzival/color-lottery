@@ -28,7 +28,7 @@
 </head>
 <body>
   <h1>抽籤</h1>
-  <p class="hint">勾選其中三個顏色，按下抽籤</p>
+  <p class="hint">勾選 2 到 4 個顏色，按下抽籤</p>
 
   <div class="options">
     <label class="option red" data-color="紅"><input type="checkbox" value="紅">紅</label>
@@ -60,16 +60,14 @@
   function refresh() {
     const picked = checkedOptions();
     options.forEach(o => o.classList.toggle('checked', o.querySelector('input').checked));
-    const ok = picked.length === 3;
+    const ok = picked.length >= 2;
     drawBtn.disabled = !ok || drawing;
     if (drawing) return;
-    if (picked.length < 3) statusEl.textContent = `已勾選 ${picked.length} 個，需要勾選 3 個`;
-    else if (picked.length > 3) statusEl.textContent = `已勾選 ${picked.length} 個，請只勾 3 個`;
-    else statusEl.textContent = '按下抽籤';
+    if (!ok) statusEl.textContent = `已勾選 ${picked.length} 個，至少需要 2 個`;
+    else statusEl.textContent = `已勾選 ${picked.length} 個，按下抽籤`;
   }
 
   options.forEach(o => o.querySelector('input').addEventListener('change', () => {
-    if (checkedOptions().length > 3) o.querySelector('input').checked = false;
     resultEl.textContent = '';
     refresh();
   }));
@@ -78,17 +76,17 @@
 
   async function draw() {
     const picked = checkedOptions();
-    if (picked.length !== 3 || drawing) return;
+    if (picked.length < 2 || drawing) return;
     drawing = true;
     drawBtn.disabled = true;
     resultEl.textContent = '';
     picked.forEach(o => o.classList.remove('highlight'));
 
-    const winnerIndex = crypto.getRandomValues(new Uint32Array(1))[0] % 3;
+    const winnerIndex = crypto.getRandomValues(new Uint32Array(1))[0] % picked.length;
     const steps = 18;
     for (let i = 0; i < steps; i++) {
       picked.forEach(o => o.classList.remove('highlight'));
-      picked[i % 3].classList.add('highlight');
+      picked[i % picked.length].classList.add('highlight');
       statusEl.textContent = '抽籤中…';
       await sleep(60 + i * 12);
     }
